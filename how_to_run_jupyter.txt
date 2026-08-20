@@ -1,0 +1,17 @@
+Running Jupyter from the project venv
+=====================================
+
+  cd ~/Desktop/"Computer Vision"
+  source .venv/bin/activate
+  jupyter notebook
+
+Or as a single line, without activating the venv:
+
+  cd ~/Desktop/"Computer Vision" && .venv/bin/jupyter notebook
+
+In PyCharm: Run -> "Jupyter Notebook" (the run configuration is already set up).
+
+Inside the notebook, check that the selected kernel is "Python 3.11 (Computer Vision venv)"
+(Kernel -> Change Kernel). Otherwise the code runs in the system Python, not in the venv.
+
+The `arch -arm64` prefix is no longer needed: the venv was created from arm64 Python 3.11.4.

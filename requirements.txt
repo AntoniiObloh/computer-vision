@@ -1,0 +1,13 @@
+# Computer Vision — pinned to the versions the notebook was written against.
+# Install:  .venv/bin/pip install -r requirements.txt
+
+# contrib build, not plain opencv-python: without it there is no cv2.legacy.* and no GOTURN.
+# 4.10 is the last version that still ships GOTURN (removed in 5.0).
+opencv-contrib-python==4.10.0.84
+numpy==2.4.6
+matplotlib==3.10.7
+pillow==12.0.0
+
+# Jupyter (notebook + the kernel PyCharm/Jupyter run the code in)
+notebook==7.3.2
+ipykernel==6.29.5
