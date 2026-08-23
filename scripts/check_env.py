@@ -11,8 +11,8 @@ import cv2
 import matplotlib
 import numpy as np
 
-ROOT = Path(__file__).resolve().parents[1]
-DATA_DIR = ROOT / "data"
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
+DATA_DIR = PROJECT_ROOT / "data"
 SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".avif"}
 
 
@@ -24,25 +24,25 @@ def main() -> int:
     print()
 
     images = sorted(
-        p
-        for p in DATA_DIR.rglob("*")
-        if p.suffix.lower() in SUFFIXES
-        and ".ipynb_checkpoints" not in p.parts
+        candidate_path
+        for candidate_path in DATA_DIR.rglob("*")
+        if candidate_path.suffix.lower() in SUFFIXES
+        and ".ipynb_checkpoints" not in candidate_path.parts
     )
-    failed = []
-    for path in images:
-        img = cv2.imread(str(path), cv2.IMREAD_COLOR)
-        rel = path.relative_to(ROOT)
-        if img is None:
-            failed.append(str(rel))
-            print(f"  FAIL  {rel}  — cv2.imread returned None")
+    failed_images = []
+    for image_path in images:
+        image = cv2.imread(str(image_path), cv2.IMREAD_COLOR)
+        relative_path = image_path.relative_to(PROJECT_ROOT)
+        if image is None:
+            failed_images.append(str(relative_path))
+            print(f"  FAIL  {relative_path}  — cv2.imread returned None")
         else:
-            h, w = img.shape[:2]
-            print(f"  ok    {str(rel):38} {w}x{h}  {img.dtype}")
+            image_height, image_width = image.shape[:2]
+            print(f"  ok    {str(relative_path):38} {image_width}x{image_height}  {image.dtype}")
 
     print()
-    if failed:
-        print(f"{len(failed)} image(s) could not be decoded: {', '.join(failed)}")
+    if failed_images:
+        print(f"{len(failed_images)} image(s) could not be decoded: {', '.join(failed_images)}")
         return 1
     print(f"All {len(images)} images decoded fine.")
     return 0

@@ -19,7 +19,7 @@ BLUR = 1
 FEATURES = 2
 CANNY = 3
 
-# Human-readable mode names - used only for legible log lines.
+# Human-readable mode names - used only for legible logger lines.
 FILTER_NAMES = {PREVIEW: "preview", BLUR: "blur", FEATURES: "features", CANNY: "canny"}
 
 # ---------------------------------------------------------------------------
@@ -37,20 +37,20 @@ KEY_FILTERS = {
 
 # ---------------------------------------------------------------------------
 # Log directory - in the project root, not in the current working directory,
-# so the log file always ends up in the same place no matter where the script
-# is started from. parents[1] is the project root, since the script itself
+# so the logger file always ends up in the same place no matter where the script
+# is started_at from. parents[1] is the project root, since the script itself
 # lives in scripts/. exist_ok=True: a repeated run does not fail if it exists.
 # ---------------------------------------------------------------------------
 LOG_DIR = Path(__file__).resolve().parents[1] / "logs"
 LOG_DIR.mkdir(exist_ok=True)
 
-HEARTBEAT = 100  # how often (in frames) to write a progress line
+HEARTBEAT = 100  # how often (in frame_count) to write a progress line
 
 # ---------------------------------------------------------------------------
 # Logging goes to two places at once: a file (a persistent session history)
 # and stdout (to see the same lines in the terminal while it runs).
-# The INFO level hides the log.debug calls below - deliberately, because those
-# fire on every keypress. Switch to logging.DEBUG when debugging key handling.
+# The INFO level hides the logger.debug calls below - deliberately, because those
+# fire on every keypress. Switch to logging.DEBUG when debugging pressed_key handling.
 # ---------------------------------------------------------------------------
 logging.basicConfig(
     level=logging.INFO,
@@ -61,7 +61,7 @@ logging.basicConfig(
         logging.StreamHandler(sys.stdout),
     ],
 )
-log = logging.getLogger("camera")
+logger = logging.getLogger("camera")
 
 # Corner detection parameters for FEATURES mode (Shi-Tomasi):
 # maxCorners - the cap on how many points, qualityLevel - the corner "strength"
@@ -72,50 +72,50 @@ feature_params = dict(maxCorners = 500, qualityLevel = 0.2, minDistance = 15, bl
 # ---------------------------------------------------------------------------
 # Video source from the command line. With no arguments - camera 0.
 # ---------------------------------------------------------------------------
-s = 0
+video_source = 0
 if len(sys.argv) > 1:
-    s = sys.argv[1]
-    if s.isdigit():  # "1" -> camera index 1; anything else stays a file path / URL
-        s = int(s)
+    video_source = sys.argv[1]
+    if video_source.isdigit():  # "1" -> camera index 1; anything else stays a file path / URL
+        video_source = int(video_source)
 
-# Separator in the log file: visually marks the start of a new session.
-log.info("=" * 62)
-log.info("session start | source=%r | opencv=%s", s, cv2.__version__)
+# Separator in the logger file: visually marks the start of a new session.
+logger.info("=" * 62)
+logger.info("session start | source=%r | opencv=%s", video_source, cv2.__version__)
 
 # Loop state: the active filter and the "keep going" flag.
 image_filter = PREVIEW
-alive = True
+is_running = True
 
 # ---------------------------------------------------------------------------
 # Opening the source. VideoCapture does not raise on failure, so the
-# isOpened() check is mandatory - otherwise we get empty frames with no
+# isOpened() check is mandatory - otherwise we get empty frame_count with no
 # explanation.
 # ---------------------------------------------------------------------------
-source = cv2.VideoCapture(s)
+source = cv2.VideoCapture(video_source)
 if not source.isOpened():
-    log.error("could not open source %r - exiting", s)
+    logger.error("could not open source %r - exiting", video_source)
     sys.exit(1)
 
-# The actual source parameters go to the log, so it is possible to tell later
+# The actual source parameters go to the logger, so it is possible to tell later
 # what the session was working with (for cameras the declared fps often does
 # not match the real one).
 width = int(source.get(cv2.CAP_PROP_FRAME_WIDTH))
 height = int(source.get(cv2.CAP_PROP_FRAME_HEIGHT))
 declared_fps = source.get(cv2.CAP_PROP_FPS)
-log.info(
+logger.info(
     "opened: %dx%d @ %.1f fps | backend=%s",
     width, height, declared_fps, source.getBackendName(),
 )
 
 # The window is created up front: WINDOW_NORMAL makes it resizable.
-win_name = "Camera Preview"
-cv2.namedWindow(win_name, cv2.WINDOW_NORMAL)
-log.info("keys: [p]review  [b]lur  [f]eatures  [c]anny  |  [q] or ESC to quit")
+window_name = "Camera Preview"
+cv2.namedWindow(window_name, cv2.WINDOW_NORMAL)
+logger.info("keys: [p]review  [b]lur  [f]eatures  [c]anny  |  [q] or ESC to quit")
 
 # Counters for the closing statistics. exit_reason is overwritten by whichever
 # branch actually ends the loop; the initial value is the most common case.
-frames = 0
-started = time.monotonic()
+frame_count = 0
+started_at = time.monotonic()
 exit_reason = "ESC pressed"
 
 # ---------------------------------------------------------------------------
@@ -124,13 +124,13 @@ exit_reason = "ESC pressed"
 # until a reboot.
 # ---------------------------------------------------------------------------
 try:
-    while alive:
+    while is_running:
         # Reading a frame. has_frame=False means end of file or a lost device -
         # both are a normal exit, not an exception.
         has_frame, frame = source.read()
         if not has_frame:
             exit_reason = "source returned no frame"
-            log.warning("read() failed at frame %d - stream ended or device lost", frames + 1)
+            logger.warning("read() failed at frame %d - stream ended or device lost", frame_count + 1)
             break
 
         # Horizontal mirroring: with a webcam this feels natural, because the
@@ -138,87 +138,87 @@ try:
         frame = cv2.flip(frame,1)
 
         # --- Frame processing for the active mode -------------------------
-        result = frame
+        processed_frame = frame
         if image_filter == PREVIEW:
-            result = frame
+            processed_frame = frame
         elif image_filter == CANNY:
             # Canny edge detector; 145/150 are the lower and upper thresholds.
-            result = cv2.Canny(frame, 145,150)
+            processed_frame = cv2.Canny(frame, 145,150)
         elif image_filter == BLUR:
             # Plain averaging over a 13x13 window.
-            result = cv2.blur(frame, (13,13))
+            processed_frame = cv2.blur(frame, (13,13))
         elif image_filter == FEATURES:
-            result = frame
+            processed_frame = frame
             # Corner detection works on intensity, so convert to grayscale.
             frame_gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
             corners = cv2.goodFeaturesToTrack(frame_gray, **feature_params)
             if corners is not None:
-                # reshape(-1,2) unfolds the (N,1,2) array into (x,y) pairs.
+                # reshape(-1,2) unfolds the (N,1,2) array into (corner_x,corner_y) pairs.
                 # int() is required: OpenCV 5 rejects float center coordinates.
-                for x,y in numpy.float32(corners).reshape(-1,2):
-                    cv2.circle(result, (int(x), int(y)),10,(0,255,0),1)
+                for corner_x,corner_y in numpy.float32(corners).reshape(-1,2):
+                    cv2.circle(processed_frame, (int(corner_x), int(corner_y)),10,(0,255,0),1)
 
-        cv2.imshow(win_name, result)
+        cv2.imshow(window_name, processed_frame)
 
         # --- Heartbeat: a periodic progress line --------------------------
-        # Every HEARTBEAT frames, write the real average fps and the active
-        # mode. That shows in the log that the session is alive, and how the
+        # Every HEARTBEAT frame_count, write the real average fps and the active
+        # mode. That shows in the logger that the session is is_running, and how the
         # processing affects the speed.
-        frames += 1
-        if frames % HEARTBEAT == 0:
-            elapsed = time.monotonic() - started
-            log.info(
+        frame_count += 1
+        if frame_count % HEARTBEAT == 0:
+            elapsed_seconds = time.monotonic() - started_at
+            logger.info(
                 "frame %d | filter=%s | %.1f fps avg",
-                frames, FILTER_NAMES[image_filter], frames / elapsed if elapsed > 0 else 0.0,
+                frame_count, FILTER_NAMES[image_filter], frame_count / elapsed_seconds if elapsed_seconds > 0 else 0.0,
             )
 
         # --- Keyboard -----------------------------------------------------
         # waitKey(1) is required not only for keys: without it the GUI never
         # repaints the window. The argument is a pause in milliseconds.
-        key = cv2.waitKey(1)
-        if key == -1:  # nothing pressed - the most common case, return immediately
+        pressed_key = cv2.waitKey(1)
+        if pressed_key == -1:  # nothing pressed - the most common case, return immediately
             continue
-        key &= 0xFF  # drop the high bits: some backends mix in modifiers
-        if ord("A") <= key <= ord("Z"):  # Shift+key is handled as a plain key
-            key += 32
+        pressed_key &= 0xFF  # drop the high bits: some backends mix in modifiers
+        if ord("A") <= pressed_key <= ord("Z"):  # Shift+pressed_key is handled as a plain pressed_key
+            pressed_key += 32
 
-        if key in (ESC, ord("q")):
-            # Not break but alive=False: the loop ends normally, and the exit
+        if pressed_key in (ESC, ord("q")):
+            # Not break but is_running=False: the loop ends normally, and the exit
             # reason is visible in the closing line in finally.
-            exit_reason = "ESC pressed" if key == ESC else "'q' pressed"
-            log.info("quit requested at frame %d (%s)", frames, exit_reason)
-            alive = False
-        elif key in KEY_FILTERS:
-            new_filter = KEY_FILTERS[key]
+            exit_reason = "ESC pressed" if pressed_key == ESC else "'q' pressed"
+            logger.info("quit requested at frame %d (%s)", frame_count, exit_reason)
+            is_running = False
+        elif pressed_key in KEY_FILTERS:
+            new_filter = KEY_FILTERS[pressed_key]
             if new_filter == image_filter:
                 # Pressing the same mode again goes to debug, so INFO does not
                 # fill up with identical lines.
-                log.debug("filter already %s - ignored", FILTER_NAMES[new_filter])
+                logger.debug("filter already %s - ignored", FILTER_NAMES[new_filter])
             else:
-                log.info(
+                logger.info(
                     "filter %s -> %s at frame %d",
-                    FILTER_NAMES[image_filter], FILTER_NAMES[new_filter], frames,
+                    FILTER_NAMES[image_filter], FILTER_NAMES[new_filter], frame_count,
                 )
                 image_filter = new_filter
         else:
-            # An unknown key breaks nothing, but leave a trace in debug.
-            log.debug("unmapped key %d (%r) ignored", key, chr(key) if 32 <= key < 127 else "")
+            # An unknown pressed_key breaks nothing, but leave a trace in debug.
+            logger.debug("unmapped key %d (%r) ignored", pressed_key, chr(pressed_key) if 32 <= pressed_key < 127 else "")
 except KeyboardInterrupt:
     # Ctrl+C is an expected way to stop, hence a warning and not a traceback.
     exit_reason = "interrupted (Ctrl+C)"
-    log.warning("interrupted by user at frame %d", frames)
+    logger.warning("interrupted by user at frame %d", frame_count)
 except Exception:
-    # log.exception writes the full traceback into the log file - without it
+    # logger.exception writes the full traceback into the logger file - without it
     # the cause of a crash cannot be recovered once the session is over.
     exit_reason = "unhandled exception"
-    log.exception("aborted at frame %d", frames)
+    logger.exception("aborted at frame %d", frame_count)
 finally:
     # Cleanup runs on every exit path: release the device, close the windows
     # and write the session summary.
-    elapsed = time.monotonic() - started
+    elapsed_seconds = time.monotonic() - started_at
     source.release()
     cv2.destroyAllWindows()
-    log.info(
+    logger.info(
         "session end | reason=%s | frames=%d | %.1f s | avg %.1f fps",
-        exit_reason, frames, elapsed, frames / elapsed if elapsed > 0 else 0.0,
+        exit_reason, frame_count, elapsed_seconds, frame_count / elapsed_seconds if elapsed_seconds > 0 else 0.0,
     )
