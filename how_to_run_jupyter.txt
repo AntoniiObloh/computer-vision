@@ -1,31 +1,6 @@
 Running Jupyter from the project venv
 =====================================
 
-  cd ~/Desktop/"Computer Vision"
-  source .venv/bin/activate
-  jupyter notebook
+ cd ~/Desktop/"Computer Vision" && arch -arm64 .venv/bin/jupyter notebook
 
-Or as a single line, without activating the venv:
 
-  cd ~/Desktop/"Computer Vision" && .venv/bin/jupyter notebook
-
-In PyCharm: Run -> "Jupyter Notebook" (the run configuration is already set up).
-
-Inside the notebook, check that the selected kernel is "Python 3.11 (Computer Vision venv)"
-(Kernel -> Change Kernel). Otherwise the code runs in the system Python, not in the venv.
-
-Architecture: the venv packages (numpy, OpenCV) are arm64-only, while the venv's
-python is a universal2 binary. If the terminal itself runs under Rosetta, python
-starts in x86_64 mode and the import fails with
-"incompatible architecture (have 'arm64', need 'x86_64')".
-
-Check the current mode:
-
-  uname -m          # must print arm64, not x86_64
-
-Permanent fix: Finder -> Applications -> Utilities -> Terminal -> Get Info ->
-uncheck "Open using Rosetta", then restart the terminal.
-
-One-off workaround, without changing the setting:
-
-  arch -arm64 .venv/bin/jupyter notebook
