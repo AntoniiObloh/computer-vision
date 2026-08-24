@@ -48,3 +48,7 @@ models/ssd_mobilenet_v2_coco_2018_03_29/**
 
 # Duplicate videos in .avi — only the .mp4 versions are kept
 videos/*.avi
+
+# MediaPipe task bundles — downloadable assets, same policy as the other weights
+# https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task
+*.task
