@@ -15,9 +15,10 @@ ipykernel==6.29.5
 # HandTrackingProject/hand_tracking_min.py — MediaPipe Tasks HandLandmarker.
 # Does not pin numpy or OpenCV, so the versions above stay as they are.
 #
-# NOT 1.0.x on macOS: 1.0.1 aborts while opening the graph with
-# "graph_service.h:139] Check failed: service_ Service is unavailable" from
-# DrishtiMetalHelper — the GPU service is never registered, yet
-# TensorsToDetectionsCalculator still asks for it. delegate=CPU does not help.
-# 0.10.35 is the newest release that runs on macOS arm64 and still allows numpy 2.
-mediapipe==0.10.35
+# Pinned to 1.0.0, and NOT 1.0.1: on macOS arm64 1.0.1 aborts while opening the
+# graph with "graph_service.h:139] Check failed: service_ Service is
+# unavailable" from DrishtiMetalHelper, because TensorsToDetectionsCalculator
+# asks for the GPU service that the Python layer never registers. Neither
+# delegate=CPU nor delegate=GPU avoids it, and MEDIAPIPE_DISABLE_GPU has no
+# effect. 1.0.0 loads the same task bundle and runs detect() fine.
+mediapipe==1.0.0
