@@ -12,7 +12,7 @@ pillow==12.0.0
 notebook==7.3.2
 ipykernel==6.29.5
 
-# HandTrackingProject/hand_tracking_min.py — MediaPipe Tasks HandLandmarker.
+# HandTrackingProject/hand_tracking.py — MediaPipe Tasks HandLandmarker.
 # Does not pin numpy or OpenCV, so the versions above stay as they are.
 #
 # Pinned to 1.0.0, and NOT 1.0.1: on macOS arm64 1.0.1 aborts while opening the
