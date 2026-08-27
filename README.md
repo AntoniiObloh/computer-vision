@@ -21,8 +21,11 @@ data/                       INPUT data (never overwritten by the code)
 models/                     model weights (*.onnx, goturn.caffemodel + goturn.prototxt)
 videos/                     input videos
 outputs/                    RESULTS produced by the notebooks (overwritten)
+HandTrackingProject/        MediaPipe Tasks hand tracking (module + runner)
+PoseEstmationProject/       MediaPipe Tasks pose estimation (module + runner)
+cv_logging.py               shared logging setup used by the projects above
 scripts/                    standalone .py scripts
-logs/                       run logs of camera_access.py
+logs/                       run logs (camera_access, hand_tracking, pose_estimation)
 .venv/                      virtual environment (not committed)
 ```
 

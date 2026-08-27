@@ -12,12 +12,12 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 from cv_logging import get_logger, log_session_start, log_heartbeat, log_session_end
 
-import HandTrackingModule as htm
+import PoseEstimationModule as rsm
 
-# Same logger name as in HandTrackingModule: the handlers are already attached
+# Same logger name as in PoseEstimationModule: the handlers are already attached
 # by the import above, so this returns the very same logger and both write into
-# logs/hand_tracking.log.
-logger = get_logger("hand_tracking")
+# logs/pose_estimation.log.
+logger = get_logger("pose_estimation")
 
 pTime = 0
 cTime = 0
@@ -28,8 +28,8 @@ if not capture.isOpened():
     logger.error("could not open camera 0 - exiting")
     sys.exit(1)
 
-started_at = log_session_start(logger, script="hand_tracking.py", source=0, opencv=cv2.__version__)
-hand_detector = htm.handDetector()
+started_at = log_session_start(logger, script="pose_estimation.py", source=0, opencv=cv2.__version__)
+hand_detector = rsm.poseDetector()
 
 # Counters for the closing summary; exit_reason is overwritten by the branch
 # that actually ends the loop.
@@ -46,7 +46,7 @@ try:
             logger.warning("read() failed at frame %d - stream ended or device lost", frame_count + 1)
             break
 
-        image = hand_detector.findHands(image)
+        image = hand_detector.findPose(image)
         lmlist = hand_detector.findPosition(image, 0)
 
         cTime = time.time()
@@ -55,8 +55,8 @@ try:
 
         frame_count += 1
         # One progress line every 100 frames: real average fps and how many
-        # hands are currently in view.
-        log_heartbeat(logger, frame_count, started_at, hands=hand_detector.lastHandCount)
+        # poses are currently in view.
+        log_heartbeat(logger, frame_count, started_at, poses=hand_detector.lastPoseCount)
 
         cv2.putText(image, str(f"fps: {int(fps)}"), (10, 70), cv2.FONT_HERSHEY_PLAIN, 3, (255, 0, 255), 3)
         cv2.imshow(winname="Image", mat=image)
