@@ -52,3 +52,6 @@ videos/*.avi
 # MediaPipe task bundles — downloadable assets, same policy as the other weights
 # https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task
 *.task
+
+# Course image kept locally only
+cv_course/data_course/cars.jpeg
